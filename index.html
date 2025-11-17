@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HR Commute Heatmap - Find Candidates by Commute Time</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🗺️ HR Commute Heatmap</h1>
+            <p class="subtitle">Visualize commute times to find the perfect candidates</p>
+        </header>
+
+        <div class="controls-panel">
+            <div class="input-group">
+                <label for="location-input">
+                    <span class="label-text">Office Location</span>
+                </label>
+                <div class="input-wrapper">
+                    <input
+                        type="text"
+                        id="location-input"
+                        placeholder="Enter address or company name..."
+                        autocomplete="off"
+                    >
+                    <button id="search-btn" class="btn btn-primary">
+                        <span class="btn-text">Generate Heatmap</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="transport-modes">
+                <label class="label-text">Transport Mode</label>
+                <div class="mode-buttons">
+                    <button class="mode-btn active" data-mode="foot-walking">
+                        🚶 Walking
+                    </button>
+                    <button class="mode-btn" data-mode="cycling-regular">
+                        🚴 Cycling
+                    </button>
+                    <button class="mode-btn" data-mode="driving-car">
+                        🚗 Driving
+                    </button>
+                </div>
+            </div>
+
+            <div class="legend">
+                <div class="legend-title">Commute Time</div>
+                <div class="legend-items">
+                    <div class="legend-item">
+                        <span class="legend-color" style="background-color: rgba(220, 38, 38, 0.3);"></span>
+                        <span>0-15 minutes</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color" style="background-color: rgba(234, 88, 12, 0.3);"></span>
+                        <span>15-30 minutes</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color" style="background-color: rgba(234, 179, 8, 0.3);"></span>
+                        <span>30-45 minutes</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="map"></div>
+
+        <div id="loading" class="loading hidden">
+            <div class="spinner"></div>
+            <p>Calculating commute zones...</p>
+        </div>
+
+        <div id="error-message" class="error-message hidden"></div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- App Configuration -->
+    <script src="config.js"></script>
+
+    <!-- Main App JS -->
+    <script src="app.js"></script>
+</body>
+</html>
