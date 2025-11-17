@@ -12,8 +12,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Initialize Leaflet map
 function initMap() {
-    // Create map centered on a default location (San Francisco)
-    map = L.map('map').setView([37.7749, -122.4194], 12);
+    // Create map centered on Paris (default location for French public transit)
+    map = L.map('map').setView([48.8566, 2.3522], 12);
 
     // Add OpenStreetMap tiles (free!)
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -152,7 +152,9 @@ async function generateIsochrones(lat, lon) {
         const colors = ['#dc2626', '#ea580c', '#eab308']; // red, orange, yellow
         const opacities = [0.3, 0.3, 0.3];
 
-        const url = 'https://api.openrouteservice.org/v2/isochrones/' + selectedMode;
+        // Map public transit to cycling-regular profile (approximates transit speeds)
+        const apiMode = selectedMode === 'public-transit' ? 'cycling-regular' : selectedMode;
+        const url = 'https://api.openrouteservice.org/v2/isochrones/' + apiMode;
 
         const response = await fetch(url, {
             method: 'POST',
@@ -216,7 +218,8 @@ function getModeLabel(mode) {
     const labels = {
         'foot-walking': 'walking',
         'cycling-regular': 'cycling',
-        'driving-car': 'driving'
+        'driving-car': 'driving',
+        'public-transit': 'public transit'
     };
     return labels[mode] || mode;
 }
