@@ -22,13 +22,16 @@ This app uses TravelTime API for calculating accurate commute times across all t
 1. Visit [TravelTime API](https://traveltime.com/)
 2. Sign up for a free account
 3. Get your API key from the dashboard
-4. Copy `config.example.js` to `config.js` and paste your API key:
+4. **Create your config file** (required - not included in repo):
+   ```bash
+   cp config.example.js config.js
+   ```
+5. **Add your API key** to `config.js`:
+   ```javascript
+   window.TRAVELTIME_API_KEY = 'your-actual-api-key-here';
+   ```
 
-```javascript
-window.TRAVELTIME_API_KEY = 'your-api-key-here';
-```
-
-**Note:** The API key is gitignored and won't be committed to the repository.
+**Note:** The `config.js` file is gitignored and won't be committed to the repository for security.
 
 ### 2. Run the Application
 
@@ -185,9 +188,11 @@ This project is open source and available under the MIT License.
 ## 🆘 Troubleshooting
 
 ### "Please configure your TravelTime API key"
-- Make sure you've copied `config.example.js` to `config.js`
-- Add your actual TravelTime API key to `config.js`
-- Refresh the page
+- **IMPORTANT**: You must create a `config.js` file (it's not included in the repo for security)
+- Copy `config.example.js` to `config.js`: `cp config.example.js config.js`
+- Open `config.js` and replace `'YOUR_API_KEY_HERE'` with your actual TravelTime API key
+- The file should look like: `window.TRAVELTIME_API_KEY = 'your-actual-key-here';`
+- Refresh the page (and clear cache if needed: Ctrl+Shift+R or Cmd+Shift+R)
 
 ### "Location not found"
 - Try being more specific (add city, state, or country)
