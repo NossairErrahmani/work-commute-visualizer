@@ -280,7 +280,8 @@ async function generateTransitIsochrones(lat, lon, autoFit = true) {
 
         // Generate grid of destination points in a radial pattern
         // This creates a comprehensive sample of reachable locations
-        const gridPoints = generateRadialGrid(lat, lon, 0.1, 16); // ~11km radius, 16 directions
+        // Increased density for more accurate isochrones
+        const gridPoints = generateRadialGrid(lat, lon, 0.1, 24); // ~11km radius, 24 directions
 
         // Query Navitia for accurate transit times to each point
         // This includes door-to-door times: walking to station + waiting + transit + walking to destination
@@ -329,7 +330,8 @@ async function generateTransitIsochrones(lat, lon, autoFit = true) {
 // Generate radial grid of points around origin
 function generateRadialGrid(centerLat, centerLon, maxRadius, numDirections) {
     const points = [];
-    const radii = [0.02, 0.04, 0.06, 0.08, 0.1]; // Multiple distance rings
+    // More rings for better sampling at different distances
+    const radii = [0.015, 0.03, 0.045, 0.06, 0.075, 0.09, 0.105]; // Multiple distance rings
 
     for (let radius of radii) {
         for (let i = 0; i < numDirections; i++) {
@@ -348,6 +350,8 @@ function generateRadialGrid(centerLat, centerLon, maxRadius, numDirections) {
 async function getTransitTravelTimes(fromLat, fromLon, toPoints) {
     const results = [];
     const batchSize = 5; // Process in small batches to avoid rate limits
+    let apiSuccessCount = 0;
+    let apiFallbackCount = 0;
 
     // Navitia API endpoint (free, no API key needed for basic usage)
     const baseUrl = 'https://api.navitia.io/v1/coverage/fr-idf/journeys';
@@ -356,36 +360,52 @@ async function getTransitTravelTimes(fromLat, fromLon, toPoints) {
     for (let i = 0; i < toPoints.length; i += batchSize) {
         const batch = toPoints.slice(i, i + batchSize);
         const batchPromises = batch.map(async (point) => {
-            try {
-                const url = `${baseUrl}?from=${fromLon};${fromLat}&to=${point.lon};${point.lat}&datetime_represents=departure`;
+            // Try API call with retry logic
+            for (let attempt = 0; attempt < 2; attempt++) {
+                try {
+                    const url = `${baseUrl}?from=${fromLon};${fromLat}&to=${point.lon};${point.lat}&datetime_represents=departure`;
 
-                const response = await fetch(url, {
-                    headers: {
-                        'Authorization': 'Basic ' + btoa('navitia-api:')  // Anonymous access
+                    const response = await fetch(url, {
+                        headers: {
+                            'Authorization': 'Basic ' + btoa('navitia-api:')  // Anonymous access
+                        }
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.journeys && data.journeys.length > 0) {
+                            // Get the fastest journey
+                            const journey = data.journeys[0];
+                            const duration = journey.duration; // in seconds, includes all walking, waiting, transfers
+
+                            apiSuccessCount++;
+                            return {
+                                lat: point.lat,
+                                lon: point.lon,
+                                duration: duration
+                            };
+                        }
                     }
-                });
 
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.journeys && data.journeys.length > 0) {
-                        // Get the fastest journey
-                        const journey = data.journeys[0];
-                        const duration = journey.duration; // in seconds, includes all walking, waiting, transfers
-
-                        return {
-                            lat: point.lat,
-                            lon: point.lon,
-                            duration: duration
-                        };
+                    // If response not ok or no journeys, try again
+                    if (attempt === 0) {
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                    }
+                } catch (error) {
+                    if (attempt === 0) {
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                    } else {
+                        console.warn('Error fetching transit time for point:', error);
                     }
                 }
-            } catch (error) {
-                console.warn('Error fetching transit time for point:', error);
             }
 
+            apiFallbackCount++;
+
             // If API call fails, estimate with very conservative transit speed
+            // 8 km/h accounts for walking to/from stations, waiting, transfers, etc.
             const distance = getDistance(fromLat, fromLon, point.lat, point.lon);
-            const estimatedDuration = (distance / 15) * 3600; // ~15 km/h average (slow, accounts for all overhead)
+            const estimatedDuration = (distance / 8) * 3600; // ~8 km/h average (realistic door-to-door transit)
 
             return {
                 lat: point.lat,
@@ -403,6 +423,9 @@ async function getTransitTravelTimes(fromLat, fromLon, toPoints) {
             await new Promise(resolve => setTimeout(resolve, 200));
         }
     }
+
+    // Log API performance for debugging
+    console.log(`Transit API results: ${apiSuccessCount} successful, ${apiFallbackCount} estimated (${Math.round(apiSuccessCount / (apiSuccessCount + apiFallbackCount) * 100)}% accuracy)`);
 
     return results;
 }
