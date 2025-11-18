@@ -6,7 +6,10 @@ An intuitive web application that helps HR professionals visualize commute times
 
 - **Interactive Map**: Click anywhere on the map or search for an address/company name
 - **Visual Heatmap**: See areas within 15min (red), 30min (orange), and 45min (yellow) commute times
-- **Multiple Transport Modes**: Choose between walking, cycling, or driving
+- **Multiple Transport Modes**: Choose between walking, cycling, driving, or public transit
+- **Smart UX**: Guided onboarding with clear instructions and disabled controls until ready
+- **Zoom-Friendly**: Heatmap respects your zoom level when switching modes
+- **Reset View Button**: Quickly return to view all commute zones
 - **Real-time Isochrone Generation**: Instantly visualize reachable areas based on actual travel times
 - **Free & Scalable**: Built with free APIs and designed to minimize costs
 
@@ -41,10 +44,11 @@ start index.html
 
 ### 3. Use the Application
 
-1. **Search for a location**: Enter your office address or company name in the search box
-2. **Or click on the map**: Place a pin anywhere you'd like
-3. **Select transport mode**: Choose walking, cycling, or driving
-4. **View the heatmap**: See the color-coded commute zones instantly
+1. **Search for a location**: Enter your office address or company name in the search box, or click anywhere on the map
+2. **Select transport mode**: Choose walking, cycling, driving, or public transit
+3. **View the heatmap**: See the color-coded commute zones instantly
+4. **Explore**: Zoom and pan the map - the heatmap stays in place
+5. **Reset view**: Click the "Reset View" button to fit all zones back into view
 
 ## 🛠️ Technology Stack
 
@@ -87,6 +91,7 @@ For an MVP and even moderate production use:
 - **Walking** 🚶: Average walking speed, considers pedestrian paths
 - **Cycling** 🚴: Standard cycling speed, uses bike-friendly routes
 - **Driving** 🚗: Car travel times, considers road networks
+- **Public Transit** 🚇: Estimated public transit times (approximated using cycling speeds)
 
 ### Time Zones
 
@@ -144,9 +149,12 @@ Please be respectful:
 
 ## 🤝 Contributing
 
-This is an MVP! Potential improvements:
+Potential improvements:
 
-- [ ] Add public transit mode
+- [x] Add public transit mode
+- [x] Improved UX with guided onboarding
+- [x] Zoom-respecting heatmap updates
+- [x] Reset view functionality
 - [ ] Cache previously searched locations
 - [ ] Export heatmap as PDF/image
 - [ ] Compare multiple locations side-by-side
