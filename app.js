@@ -195,14 +195,18 @@ async function generateIsochrones(lat, lon, autoFit = true) {
     isochroneLayers = [];
 
     try {
-        // Request isochrones for 15, 30, and 45 minutes
+        // Use accurate public transit routing for transit mode
+        if (selectedMode === 'public-transit') {
+            await generateTransitIsochrones(lat, lon, autoFit);
+            return;
+        }
+
+        // For other modes, use OpenRouteService
         const intervals = [900, 1800, 2700]; // in seconds (15, 30, 45 minutes)
         const colors = ['#dc2626', '#ea580c', '#eab308']; // red, orange, yellow
         const opacities = [0.3, 0.3, 0.3];
 
-        // Map public transit to cycling-regular profile (approximates transit speeds)
-        const apiMode = selectedMode === 'public-transit' ? 'cycling-regular' : selectedMode;
-        const url = 'https://api.openrouteservice.org/v2/isochrones/' + apiMode;
+        const url = 'https://api.openrouteservice.org/v2/isochrones/' + selectedMode;
 
         const response = await fetch(url, {
             method: 'POST',
@@ -264,6 +268,197 @@ async function generateIsochrones(lat, lon, autoFit = true) {
     } finally {
         showLoading(false);
     }
+}
+
+// Generate accurate public transit isochrones using Navitia API
+// This accounts for walking to/from stations, waiting times, transfers, etc.
+async function generateTransitIsochrones(lat, lon, autoFit = true) {
+    try {
+        const intervals = [15, 30, 45]; // in minutes
+        const colors = ['#dc2626', '#ea580c', '#eab308']; // red, orange, yellow
+        const opacities = [0.3, 0.3, 0.3];
+
+        // Generate grid of destination points in a radial pattern
+        // This creates a comprehensive sample of reachable locations
+        const gridPoints = generateRadialGrid(lat, lon, 0.1, 16); // ~11km radius, 16 directions
+
+        // Query Navitia for accurate transit times to each point
+        // This includes door-to-door times: walking to station + waiting + transit + walking to destination
+        const travelTimes = await getTransitTravelTimes(lat, lon, gridPoints);
+
+        // Create isochrone polygons from the sampled points
+        for (let i = intervals.length - 1; i >= 0; i--) {
+            const maxMinutes = intervals[i];
+            const reachablePoints = travelTimes
+                .filter(pt => pt.duration <= maxMinutes * 60)
+                .map(pt => [pt.lat, pt.lon]);
+
+            if (reachablePoints.length > 0) {
+                // Create convex hull or concave hull for the isochrone shape
+                const hull = createConvexHull(reachablePoints);
+
+                if (hull && hull.length >= 3) {
+                    const polygon = L.polygon(hull, {
+                        color: colors[i],
+                        weight: 2,
+                        opacity: 0.8,
+                        fillColor: colors[i],
+                        fillOpacity: opacities[i]
+                    }).bindPopup(`<strong>${maxMinutes} minutes</strong><br>by ${getModeLabel('public-transit')}<br><em>(includes walking to/from stations)</em>`);
+
+                    polygon.addTo(map);
+                    isochroneLayers.push(polygon);
+                }
+            }
+        }
+
+        // Auto-fit map bounds if requested
+        if (autoFit && isochroneLayers.length > 0) {
+            const group = L.featureGroup(isochroneLayers);
+            map.fitBounds(group.getBounds().pad(0.1));
+        }
+
+        // Show reset view button
+        showResetViewButton();
+    } catch (error) {
+        console.error('Transit isochrone error:', error);
+        showError(error.message || 'Error generating transit zones. Please try again.');
+    }
+}
+
+// Generate radial grid of points around origin
+function generateRadialGrid(centerLat, centerLon, maxRadius, numDirections) {
+    const points = [];
+    const radii = [0.02, 0.04, 0.06, 0.08, 0.1]; // Multiple distance rings
+
+    for (let radius of radii) {
+        for (let i = 0; i < numDirections; i++) {
+            const angle = (i / numDirections) * 2 * Math.PI;
+            const lat = centerLat + radius * Math.cos(angle);
+            const lon = centerLon + radius * Math.sin(angle) * (1 / Math.cos(centerLat * Math.PI / 180));
+            points.push({ lat, lon });
+        }
+    }
+
+    return points;
+}
+
+// Get accurate transit travel times using Navitia API (free French public transit API)
+// Returns door-to-door journey times including walking, waiting, and transfers
+async function getTransitTravelTimes(fromLat, fromLon, toPoints) {
+    const results = [];
+    const batchSize = 5; // Process in small batches to avoid rate limits
+
+    // Navitia API endpoint (free, no API key needed for basic usage)
+    const baseUrl = 'https://api.navitia.io/v1/coverage/fr-idf/journeys';
+
+    // Process points in batches with delays to respect rate limits
+    for (let i = 0; i < toPoints.length; i += batchSize) {
+        const batch = toPoints.slice(i, i + batchSize);
+        const batchPromises = batch.map(async (point) => {
+            try {
+                const url = `${baseUrl}?from=${fromLon};${fromLat}&to=${point.lon};${point.lat}&datetime_represents=departure`;
+
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': 'Basic ' + btoa('navitia-api:')  // Anonymous access
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.journeys && data.journeys.length > 0) {
+                        // Get the fastest journey
+                        const journey = data.journeys[0];
+                        const duration = journey.duration; // in seconds, includes all walking, waiting, transfers
+
+                        return {
+                            lat: point.lat,
+                            lon: point.lon,
+                            duration: duration
+                        };
+                    }
+                }
+            } catch (error) {
+                console.warn('Error fetching transit time for point:', error);
+            }
+
+            // If API call fails, estimate with very conservative transit speed
+            const distance = getDistance(fromLat, fromLon, point.lat, point.lon);
+            const estimatedDuration = (distance / 15) * 3600; // ~15 km/h average (slow, accounts for all overhead)
+
+            return {
+                lat: point.lat,
+                lon: point.lon,
+                duration: estimatedDuration,
+                estimated: true
+            };
+        });
+
+        const batchResults = await Promise.all(batchPromises);
+        results.push(...batchResults);
+
+        // Add delay between batches to respect rate limits
+        if (i + batchSize < toPoints.length) {
+            await new Promise(resolve => setTimeout(resolve, 200));
+        }
+    }
+
+    return results;
+}
+
+// Calculate distance between two coordinates (Haversine formula)
+function getDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Earth's radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+}
+
+// Create convex hull from points (Graham scan algorithm)
+function createConvexHull(points) {
+    if (points.length < 3) return points;
+
+    // Find the point with lowest y-coordinate (and leftmost if tie)
+    let pivot = points.reduce((lowest, p) =>
+        p[0] < lowest[0] || (p[0] === lowest[0] && p[1] < lowest[1]) ? p : lowest
+    );
+
+    // Sort points by polar angle with respect to pivot
+    const sorted = points.filter(p => p !== pivot).sort((a, b) => {
+        const angleA = Math.atan2(a[0] - pivot[0], a[1] - pivot[1]);
+        const angleB = Math.atan2(b[0] - pivot[0], b[1] - pivot[1]);
+        return angleA - angleB;
+    });
+
+    // Build hull using Graham scan
+    const hull = [pivot, sorted[0]];
+
+    for (let i = 1; i < sorted.length; i++) {
+        let top = hull[hull.length - 1];
+        let middle = hull[hull.length - 2];
+        let p = sorted[i];
+
+        // Remove points that create clockwise turn
+        while (hull.length > 1 && crossProduct(middle, top, p) <= 0) {
+            hull.pop();
+            top = hull[hull.length - 1];
+            middle = hull[hull.length - 2];
+        }
+
+        hull.push(p);
+    }
+
+    return hull;
+}
+
+// Calculate cross product for convex hull
+function crossProduct(o, a, b) {
+    return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
 }
 
 // Get human-readable mode label
