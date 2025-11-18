@@ -15,25 +15,7 @@ An intuitive web application that helps HR professionals visualize commute times
 
 ## 🚀 Quick Start
 
-### 1. Get a Free API Key
-
-This app uses TravelTime API for calculating accurate commute times across all transport modes.
-
-1. Visit [TravelTime API](https://traveltime.com/)
-2. Sign up for a free account
-3. Get your API key from the dashboard
-4. **Create your config file** (required - not included in repo):
-   ```bash
-   cp config.example.js config.js
-   ```
-5. **Add your API key** to `config.js`:
-   ```javascript
-   window.TRAVELTIME_API_KEY = 'your-actual-api-key-here';
-   ```
-
-**Note:** The `config.js` file is gitignored and won't be committed to the repository for security.
-
-### 2. Run the Application
+### 1. Run the Application
 
 Simply open `index.html` in your web browser. No build tools or server required!
 
@@ -47,7 +29,7 @@ start index.html
 # Or just double-click the index.html file
 ```
 
-### 3. Use the Application
+### 2. Use the Application
 
 1. **Search for a location**: Enter your office address or company name in the search box, or click anywhere on the map
 2. **Select transport mode**: Choose walking, cycling, driving, or public transit
@@ -62,7 +44,6 @@ start index.html
 - **Leaflet.js** - Free, open-source map library (no API key needed!)
 - **OpenStreetMap** - Free map tiles (no API key needed!)
 - **Nominatim** - Free geocoding service (no API key needed!)
-- **TravelTime API** - Accurate isochrone API for all transport modes (free tier available)
 - **Vanilla JavaScript** - No build tools, dependencies, or frameworks required
 
 ### Cost Analysis
@@ -73,42 +54,36 @@ For an MVP and even moderate production use:
 |---------|-----------|------------------|
 | Map Display (OSM) | Unlimited | Always free |
 | Geocoding (Nominatim) | Unlimited* | Always free |
-| Isochrones (TravelTime) | Check plan | Varies by plan |
+| Isochrones | Client-side calculation | Always free |
 
 *Nominatim has usage limits but no hard cap - be respectful with requests
 
-**Bottom line**: TravelTime API provides accurate, real-time isochrones for all transport modes. Check their pricing page for current plan details.
+**Bottom line**: 100% free! All calculations are done client-side in your browser.
 
 ## 📖 How It Works
 
 1. **Geocoding**: When you enter an address, Nominatim (OpenStreetMap's geocoding service) converts it to coordinates
 
-2. **Isochrone Calculation**:
-   - **All transport modes**: TravelTime API calculates accurate reachable areas within specified time limits:
-     - **Walking**: Pedestrian-friendly routes and actual walking speeds
-     - **Cycling**: Bike-friendly routes with elevation considerations
-     - **Driving**: Real road networks with traffic patterns
-     - **Public Transit**: Comprehensive door-to-door journey times including:
-       - Walking to nearest station
-       - Real-time transit schedules
-       - Transfer times and connections
-       - Walking from destination station
+2. **Isochrone Calculation**: The app calculates approximate reachable areas based on straight-line distance and typical travel speeds:
+   - **Walking**: 5 km/h typical walking speed
+   - **Cycling**: 15 km/h typical cycling speed
+   - **Driving**: 40 km/h average in urban areas
+   - **Public Transit**: 20 km/h including stops and transfers
 
-3. **Visualization**: The results are displayed as colored polygons on the map using Leaflet
+   Note: These are approximations based on circular zones. Real travel times may vary due to roads, terrain, and other factors.
+
+3. **Visualization**: The results are displayed as colored circular polygons on the map using Leaflet
 
 ## 🎨 Features Explained
 
 ### Transport Modes
 
-- **Walking** 🚶: Average walking speed, considers pedestrian paths
-- **Cycling** 🚴: Standard cycling speed, uses bike-friendly routes
-- **Driving** 🚗: Car travel times, considers road networks and traffic
-- **Public Transit** 🚇: **Accurate door-to-door transit times** using real transit data
-  - Includes walking to the nearest station
-  - Accounts for waiting times and schedules
-  - Considers transfers between lines
-  - Includes walking from destination station to final point
-  - Powered by TravelTime API with real-time transit data
+- **Walking** 🚶: 5 km/h average walking speed
+- **Cycling** 🚴: 15 km/h typical cycling speed
+- **Driving** 🚗: 40 km/h average in urban areas
+- **Public Transit** 🚇: 20 km/h approximate speed including walking, waiting, and transfers
+
+Note: These are straight-line distance estimates. Actual commute times may vary based on road networks, terrain, traffic, and transit availability.
 
 ### Time Zones
 
@@ -118,9 +93,9 @@ For an MVP and even moderate production use:
 
 ## 🔒 Privacy & Security
 
-- All API calls are made client-side from the user's browser
-- No user data is stored or transmitted to any server (except the mapping APIs)
-- API key is stored locally in your browser
+- All calculations are performed client-side in your browser
+- No user data is stored or transmitted to any server (except for geocoding with Nominatim)
+- No API keys required
 - Suitable for processing candidate addresses confidentially
 
 ## 🚀 Deployment Options
@@ -146,17 +121,6 @@ All of these are essentially free for this use case!
 ```
 
 ## ⚠️ Important Notes
-
-### API Rate Limits
-
-TravelTime API limits depend on your plan. Check your dashboard for current limits.
-
-Each heatmap generation = 3 requests (one for each time interval)
-
-Best practices:
-- Cache results for frequently searched locations
-- Consider upgrading your plan for high-volume use
-- Monitor your API usage in the TravelTime dashboard
 
 ### Nominatim Usage Policy
 
@@ -187,22 +151,10 @@ This project is open source and available under the MIT License.
 
 ## 🆘 Troubleshooting
 
-### "Please configure your TravelTime API key"
-- **IMPORTANT**: You must create a `config.js` file (it's not included in the repo for security)
-- Copy `config.example.js` to `config.js`: `cp config.example.js config.js`
-- Open `config.js` and replace `'YOUR_API_KEY_HERE'` with your actual TravelTime API key
-- The file should look like: `window.TRAVELTIME_API_KEY = 'your-actual-key-here';`
-- Refresh the page (and clear cache if needed: Ctrl+Shift+R or Cmd+Shift+R)
-
 ### "Location not found"
 - Try being more specific (add city, state, or country)
 - Try a landmark or well-known company name
 - Make sure you're online
-
-### "API rate limit exceeded"
-- You've reached your API limit
-- Check your TravelTime dashboard for usage details
-- Wait until your limit resets or upgrade your plan
 
 ### Map not loading
 - Check your internet connection
