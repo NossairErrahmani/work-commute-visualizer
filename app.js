@@ -176,8 +176,8 @@ function showResetViewButton() {
 // Generate isochrones (commute time zones)
 async function generateIsochrones(lat, lon, autoFit = true) {
     // Check if API key is configured
-    if (!window.ORS_API_KEY || window.ORS_API_KEY === 'YOUR_API_KEY_HERE') {
-        showError('Please configure your OpenRouteService API key in config.js. See README for instructions.');
+    if (!window.TRAVELTIME_API_KEY || window.TRAVELTIME_API_KEY === 'YOUR_API_KEY_HERE') {
+        showError('Please configure your TravelTime API key in config.js. See README for instructions.');
         return;
     }
 
@@ -195,35 +195,54 @@ async function generateIsochrones(lat, lon, autoFit = true) {
     isochroneLayers = [];
 
     try {
-        // Use accurate public transit routing for transit mode
-        if (selectedMode === 'public-transit') {
-            await generateTransitIsochrones(lat, lon, autoFit);
-            return;
-        }
-
-        // For other modes, use OpenRouteService
+        // Use TravelTime API for all modes
         const intervals = [900, 1800, 2700]; // in seconds (15, 30, 45 minutes)
         const colors = ['#dc2626', '#ea580c', '#eab308']; // red, orange, yellow
         const opacities = [0.3, 0.3, 0.3];
 
-        const url = 'https://api.openrouteservice.org/v2/isochrones/' + selectedMode;
+        // Map our mode names to TravelTime API transportation types
+        const modeMap = {
+            'foot-walking': 'walking',
+            'cycling-regular': 'cycling',
+            'driving-car': 'driving',
+            'public-transit': 'public_transport'
+        };
+
+        const travelTimeMode = modeMap[selectedMode] || 'walking';
+
+        // Decode the API key (it's base64 encoded JSON)
+        const apiKeyData = JSON.parse(atob(window.TRAVELTIME_API_KEY));
+
+        const url = 'https://api.traveltimeapp.com/v4/time-map';
 
         const response = await fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': window.ORS_API_KEY
+                'X-Application-Id': apiKeyData.id,
+                'X-Api-Key': apiKeyData.h
             },
             body: JSON.stringify({
-                locations: [[lon, lat]],
-                range: intervals,
-                range_type: 'time'
+                departure_searches: intervals.map((interval, idx) => ({
+                    id: `isochrone_${idx}`,
+                    coords: {
+                        lat: lat,
+                        lng: lon
+                    },
+                    transportation: {
+                        type: travelTimeMode
+                    },
+                    travel_time: interval,
+                    departure_time: new Date().toISOString()
+                }))
             })
         });
 
         if (!response.ok) {
-            if (response.status === 403) {
-                throw new Error('Invalid API key. Please check your OpenRouteService API key in config.js');
+            const errorText = await response.text();
+            console.error('TravelTime API error:', errorText);
+            if (response.status === 401 || response.status === 403) {
+                throw new Error('Invalid API key. Please check your TravelTime API key in config.js');
             } else if (response.status === 429) {
                 throw new Error('API rate limit exceeded. Please try again later.');
             } else {
@@ -234,27 +253,31 @@ async function generateIsochrones(lat, lon, autoFit = true) {
         const data = await response.json();
 
         // Add isochrones to map (in reverse order so largest is on bottom)
-        if (data.features && data.features.length > 0) {
-            for (let i = data.features.length - 1; i >= 0; i--) {
-                const feature = data.features[i];
-                const timeValue = intervals[i] / 60; // convert to minutes
+        if (data.results && data.results.length > 0) {
+            for (let i = data.results.length - 1; i >= 0; i--) {
+                const result = data.results[i];
+                if (result.shapes && result.shapes.length > 0) {
+                    const shape = result.shapes[0]; // Get the first shape
+                    const timeValue = intervals[i] / 60; // convert to minutes
 
-                const layer = L.geoJSON(feature, {
-                    style: {
+                    // Convert shell coordinates to Leaflet format
+                    const coordinates = shape.shell.map(coord => [coord.lat, coord.lng]);
+
+                    const layer = L.polygon(coordinates, {
                         color: colors[i],
                         weight: 2,
                         opacity: 0.8,
                         fillColor: colors[i],
                         fillOpacity: opacities[i]
-                    }
-                }).bindPopup(`<strong>${timeValue} minutes</strong><br>by ${getModeLabel(selectedMode)}`);
+                    }).bindPopup(`<strong>${timeValue} minutes</strong><br>by ${getModeLabel(selectedMode)}`);
 
-                layer.addTo(map);
-                isochroneLayers.push(layer);
+                    layer.addTo(map);
+                    isochroneLayers.push(layer);
+                }
             }
 
             // Only auto-fit map bounds on initial load, not when changing modes
-            if (autoFit) {
+            if (autoFit && isochroneLayers.length > 0) {
                 const group = L.featureGroup(isochroneLayers);
                 map.fitBounds(group.getBounds().pad(0.1));
             }

@@ -17,16 +17,18 @@ An intuitive web application that helps HR professionals visualize commute times
 
 ### 1. Get a Free API Key
 
-This app uses OpenRouteService for calculating commute times. Their free tier includes **2,000 requests per day** - more than enough for typical HR use!
+This app uses TravelTime API for calculating accurate commute times across all transport modes.
 
-1. Visit [OpenRouteService Sign Up](https://openrouteservice.org/dev/#/signup)
-2. Create a free account
-3. Go to your dashboard and copy your API key
-4. Paste it into `config.js`:
+1. Visit [TravelTime API](https://traveltime.com/)
+2. Sign up for a free account
+3. Get your API key from the dashboard
+4. Copy `config.example.js` to `config.js` and paste your API key:
 
 ```javascript
-window.ORS_API_KEY = 'your-actual-api-key-here';
+window.TRAVELTIME_API_KEY = 'your-api-key-here';
 ```
+
+**Note:** The API key is gitignored and won't be committed to the repository.
 
 ### 2. Run the Application
 
@@ -57,8 +59,7 @@ start index.html
 - **Leaflet.js** - Free, open-source map library (no API key needed!)
 - **OpenStreetMap** - Free map tiles (no API key needed!)
 - **Nominatim** - Free geocoding service (no API key needed!)
-- **OpenRouteService** - Free isochrone API for walking, cycling, driving (2,000 requests/day free tier)
-- **Navitia API** - Free, accurate public transit routing for France (no API key needed!)
+- **TravelTime API** - Accurate isochrone API for all transport modes (free tier available)
 - **Vanilla JavaScript** - No build tools, dependencies, or frameworks required
 
 ### Cost Analysis
@@ -69,29 +70,26 @@ For an MVP and even moderate production use:
 |---------|-----------|------------------|
 | Map Display (OSM) | Unlimited | Always free |
 | Geocoding (Nominatim) | Unlimited* | Always free |
-| Isochrones (ORS) | 2,000/day | $0.0004 per request |
+| Isochrones (TravelTime) | Check plan | Varies by plan |
 
 *Nominatim has usage limits but no hard cap - be respectful with requests
 
-**Bottom line**: For typical HR usage (10-50 searches per day), this will cost you **$0/month**. Even at scale (500 searches/day), you're looking at ~$3.60/month.
+**Bottom line**: TravelTime API provides accurate, real-time isochrones for all transport modes. Check their pricing page for current plan details.
 
 ## 📖 How It Works
 
 1. **Geocoding**: When you enter an address, Nominatim (OpenStreetMap's geocoding service) converts it to coordinates
 
 2. **Isochrone Calculation**:
-   - **For walking, cycling, driving**: OpenRouteService calculates the actual reachable areas within specified time limits, considering:
-     - Real road networks
-     - Traffic patterns
-     - Transport mode capabilities
-     - Geographic obstacles
-
-   - **For public transit**: Navitia API provides accurate door-to-door journey times:
-     - Walking distance to nearest station
-     - Real transit schedules and routes
-     - Transfer times between lines
-     - Walking distance from destination station
-     - Multiple destination points are sampled to create realistic transit zones
+   - **All transport modes**: TravelTime API calculates accurate reachable areas within specified time limits:
+     - **Walking**: Pedestrian-friendly routes and actual walking speeds
+     - **Cycling**: Bike-friendly routes with elevation considerations
+     - **Driving**: Real road networks with traffic patterns
+     - **Public Transit**: Comprehensive door-to-door journey times including:
+       - Walking to nearest station
+       - Real-time transit schedules
+       - Transfer times and connections
+       - Walking from destination station
 
 3. **Visualization**: The results are displayed as colored polygons on the map using Leaflet
 
@@ -101,13 +99,13 @@ For an MVP and even moderate production use:
 
 - **Walking** 🚶: Average walking speed, considers pedestrian paths
 - **Cycling** 🚴: Standard cycling speed, uses bike-friendly routes
-- **Driving** 🚗: Car travel times, considers road networks
-- **Public Transit** 🚇: **Accurate door-to-door transit times** using real transit routes
+- **Driving** 🚗: Car travel times, considers road networks and traffic
+- **Public Transit** 🚇: **Accurate door-to-door transit times** using real transit data
   - Includes walking to the nearest station
   - Accounts for waiting times and schedules
   - Considers transfers between lines
   - Includes walking from destination station to final point
-  - Powered by Navitia API (France's official public transit data)
+  - Powered by TravelTime API with real-time transit data
 
 ### Time Zones
 
@@ -148,13 +146,14 @@ All of these are essentially free for this use case!
 
 ### API Rate Limits
 
-OpenRouteService free tier: 2,000 requests/day
+TravelTime API limits depend on your plan. Check your dashboard for current limits.
 
-Each heatmap generation = 1 request
+Each heatmap generation = 3 requests (one for each time interval)
 
-If you need more, consider:
-- Caching results for frequently searched locations
-- Upgrading to a paid plan (~$3-10/month for 10,000-50,000 requests)
+Best practices:
+- Cache results for frequently searched locations
+- Consider upgrading your plan for high-volume use
+- Monitor your API usage in the TravelTime dashboard
 
 ### Nominatim Usage Policy
 
@@ -185,9 +184,9 @@ This project is open source and available under the MIT License.
 
 ## 🆘 Troubleshooting
 
-### "Please configure your OpenRouteService API key"
+### "Please configure your TravelTime API key"
 - Make sure you've copied `config.example.js` to `config.js`
-- Add your actual API key to `config.js`
+- Add your actual TravelTime API key to `config.js`
 - Refresh the page
 
 ### "Location not found"
@@ -196,8 +195,9 @@ This project is open source and available under the MIT License.
 - Make sure you're online
 
 ### "API rate limit exceeded"
-- You've used your 2,000 daily requests
-- Wait 24 hours or upgrade your OpenRouteService plan
+- You've reached your API limit
+- Check your TravelTime dashboard for usage details
+- Wait until your limit resets or upgrade your plan
 
 ### Map not loading
 - Check your internet connection
