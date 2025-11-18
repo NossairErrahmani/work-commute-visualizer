@@ -39,16 +39,16 @@
             <div class="transport-modes">
                 <label class="label-text">Transport Mode</label>
                 <div class="mode-buttons">
-                    <button class="mode-btn active" data-mode="foot-walking">
+                    <button class="mode-btn" data-mode="foot-walking" disabled>
                         🚶 Walking
                     </button>
-                    <button class="mode-btn" data-mode="cycling-regular">
+                    <button class="mode-btn" data-mode="cycling-regular" disabled>
                         🚴 Cycling
                     </button>
-                    <button class="mode-btn" data-mode="driving-car">
+                    <button class="mode-btn" data-mode="driving-car" disabled>
                         🚗 Driving
                     </button>
-                    <button class="mode-btn" data-mode="public-transit">
+                    <button class="mode-btn" data-mode="public-transit" disabled>
                         🚇 Public Transit
                     </button>
                 </div>
@@ -73,7 +73,20 @@
             </div>
         </div>
 
-        <div id="map"></div>
+        <div id="map">
+            <button id="reset-view-btn" class="reset-view-btn hidden" title="Reset view to show all zones">
+                🎯 Reset View
+            </button>
+        </div>
+
+        <div id="map-overlay" class="map-overlay">
+            <div class="overlay-content">
+                <div class="overlay-icon">📍</div>
+                <h2>Get Started</h2>
+                <p>Enter an office location above to visualize commute zones and find the perfect candidates.</p>
+                <p class="overlay-hint">You can also click anywhere on the map to place a pin!</p>
+            </div>
+        </div>
 
         <div id="loading" class="loading hidden">
             <div class="spinner"></div>

@@ -2,12 +2,14 @@
 let map;
 let currentMarker;
 let isochroneLayers = [];
-let selectedMode = 'foot-walking';
+let selectedMode = null;
+let isFirstLocation = true;
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
     initMap();
     setupEventListeners();
+    setupResetViewButton();
 });
 
 // Initialize Leaflet map
@@ -51,10 +53,10 @@ function setupEventListeners() {
             // Update selected mode
             selectedMode = this.getAttribute('data-mode');
 
-            // If there's a current location, regenerate isochrones
+            // If there's a current location, regenerate isochrones without auto-fitting
             if (currentMarker) {
                 const latLng = currentMarker.getLatLng();
-                generateIsochrones(latLng.lat, latLng.lng);
+                generateIsochrones(latLng.lat, latLng.lng, false);
             }
         });
     });
@@ -129,13 +131,59 @@ function updateLocation(lat, lon, name) {
 
     // Center map on location
     map.setView([lat, lon], 13);
+
+    // Hide overlay and enable mode buttons on first location
+    if (isFirstLocation) {
+        hideOverlay();
+        enableModeButtons();
+        // Set default mode to walking
+        selectedMode = 'foot-walking';
+        document.querySelector('[data-mode="foot-walking"]').classList.add('active');
+        isFirstLocation = false;
+    }
+}
+
+// Hide the map overlay
+function hideOverlay() {
+    const overlay = document.getElementById('map-overlay');
+    overlay.classList.add('hidden');
+}
+
+// Enable transport mode buttons
+function enableModeButtons() {
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+        btn.disabled = false;
+    });
+}
+
+// Setup reset view button
+function setupResetViewButton() {
+    const resetBtn = document.getElementById('reset-view-btn');
+    resetBtn.addEventListener('click', function() {
+        if (isochroneLayers.length > 0) {
+            const group = L.featureGroup(isochroneLayers);
+            map.fitBounds(group.getBounds().pad(0.1));
+        }
+    });
+}
+
+// Show reset view button
+function showResetViewButton() {
+    const resetBtn = document.getElementById('reset-view-btn');
+    resetBtn.classList.remove('hidden');
 }
 
 // Generate isochrones (commute time zones)
-async function generateIsochrones(lat, lon) {
+async function generateIsochrones(lat, lon, autoFit = true) {
     // Check if API key is configured
     if (!window.ORS_API_KEY || window.ORS_API_KEY === 'YOUR_API_KEY_HERE') {
         showError('Please configure your OpenRouteService API key in config.js. See README for instructions.');
+        return;
+    }
+
+    // Check if mode is selected
+    if (!selectedMode) {
+        showError('Please select a transport mode first.');
         return;
     }
 
@@ -201,9 +249,14 @@ async function generateIsochrones(lat, lon) {
                 isochroneLayers.push(layer);
             }
 
-            // Fit map to show all isochrones
-            const group = L.featureGroup(isochroneLayers);
-            map.fitBounds(group.getBounds().pad(0.1));
+            // Only auto-fit map bounds on initial load, not when changing modes
+            if (autoFit) {
+                const group = L.featureGroup(isochroneLayers);
+                map.fitBounds(group.getBounds().pad(0.1));
+            }
+
+            // Show reset view button after isochrones are loaded
+            showResetViewButton();
         }
     } catch (error) {
         console.error('Isochrone error:', error);

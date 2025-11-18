@@ -126,8 +126,14 @@ header h1 {
     color: #475569;
 }
 
-.mode-btn:hover {
+.mode-btn:hover:not(:disabled) {
     border-color: #cbd5e1;
+    background: #f8fafc;
+}
+
+.mode-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
     background: #f8fafc;
 }
 
@@ -178,6 +184,101 @@ header h1 {
     width: 100%;
     min-height: 400px;
     position: relative;
+}
+
+.map-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    pointer-events: none;
+    transition: opacity 0.3s, visibility 0.3s;
+}
+
+.map-overlay.hidden {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.overlay-content {
+    text-align: center;
+    max-width: 500px;
+    padding: 40px;
+}
+
+.overlay-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+    animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-20px);
+    }
+    60% {
+        transform: translateY(-10px);
+    }
+}
+
+.overlay-content h2 {
+    font-size: 2rem;
+    color: #1e293b;
+    margin-bottom: 16px;
+    font-weight: 700;
+}
+
+.overlay-content p {
+    font-size: 1.1rem;
+    color: #475569;
+    margin-bottom: 12px;
+    line-height: 1.6;
+}
+
+.overlay-hint {
+    font-size: 0.95rem !important;
+    color: #667eea !important;
+    font-weight: 500;
+    margin-top: 20px;
+}
+
+.reset-view-btn {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    z-index: 999;
+    background: white;
+    border: 2px solid #667eea;
+    color: #667eea;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: all 0.2s;
+    font-family: inherit;
+}
+
+.reset-view-btn:hover {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.3);
+}
+
+.reset-view-btn.hidden {
+    display: none;
 }
 
 .loading {
@@ -237,7 +338,7 @@ header h1 {
     display: none;
 }
 
-/* Leaflet popup customization */
+/* Leaflet customization */
 .leaflet-popup-content-wrapper {
     border-radius: 10px;
     padding: 4px;
@@ -246,6 +347,20 @@ header h1 {
 .leaflet-popup-content {
     margin: 12px;
     font-family: inherit;
+}
+
+/* Smooth fade-in for isochrone layers */
+.leaflet-overlay-pane svg {
+    animation: fadeIn 0.4s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
 }
 
 /* Responsive design */
@@ -271,11 +386,27 @@ header h1 {
     }
 
     .mode-buttons {
-        flex-direction: column;
+        grid-template-columns: 1fr 1fr;
+        display: grid;
     }
 
     .legend-items {
         flex-direction: column;
         gap: 10px;
+    }
+
+    .overlay-content h2 {
+        font-size: 1.5rem;
+    }
+
+    .overlay-content p {
+        font-size: 1rem;
+    }
+
+    .reset-view-btn {
+        bottom: 10px;
+        right: 10px;
+        padding: 8px 16px;
+        font-size: 0.85rem;
     }
 }
