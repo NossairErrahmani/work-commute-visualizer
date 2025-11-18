@@ -57,7 +57,8 @@ start index.html
 - **Leaflet.js** - Free, open-source map library (no API key needed!)
 - **OpenStreetMap** - Free map tiles (no API key needed!)
 - **Nominatim** - Free geocoding service (no API key needed!)
-- **OpenRouteService** - Free isochrone API (2,000 requests/day free tier)
+- **OpenRouteService** - Free isochrone API for walking, cycling, driving (2,000 requests/day free tier)
+- **Navitia API** - Free, accurate public transit routing for France (no API key needed!)
 - **Vanilla JavaScript** - No build tools, dependencies, or frameworks required
 
 ### Cost Analysis
@@ -77,11 +78,21 @@ For an MVP and even moderate production use:
 ## 📖 How It Works
 
 1. **Geocoding**: When you enter an address, Nominatim (OpenStreetMap's geocoding service) converts it to coordinates
-2. **Isochrone Calculation**: OpenRouteService calculates the actual reachable areas within specified time limits, considering:
-   - Real road networks
-   - Traffic patterns
-   - Transport mode capabilities
-   - Geographic obstacles
+
+2. **Isochrone Calculation**:
+   - **For walking, cycling, driving**: OpenRouteService calculates the actual reachable areas within specified time limits, considering:
+     - Real road networks
+     - Traffic patterns
+     - Transport mode capabilities
+     - Geographic obstacles
+
+   - **For public transit**: Navitia API provides accurate door-to-door journey times:
+     - Walking distance to nearest station
+     - Real transit schedules and routes
+     - Transfer times between lines
+     - Walking distance from destination station
+     - Multiple destination points are sampled to create realistic transit zones
+
 3. **Visualization**: The results are displayed as colored polygons on the map using Leaflet
 
 ## 🎨 Features Explained
@@ -91,7 +102,12 @@ For an MVP and even moderate production use:
 - **Walking** 🚶: Average walking speed, considers pedestrian paths
 - **Cycling** 🚴: Standard cycling speed, uses bike-friendly routes
 - **Driving** 🚗: Car travel times, considers road networks
-- **Public Transit** 🚇: Estimated public transit times (approximated using cycling speeds)
+- **Public Transit** 🚇: **Accurate door-to-door transit times** using real transit routes
+  - Includes walking to the nearest station
+  - Accounts for waiting times and schedules
+  - Considers transfers between lines
+  - Includes walking from destination station to final point
+  - Powered by Navitia API (France's official public transit data)
 
 ### Time Zones
 
